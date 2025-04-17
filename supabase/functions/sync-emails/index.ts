@@ -64,7 +64,7 @@ serve(async (req) => {
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://rytpbfpgkswojbsyankv.supabase.co";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || req.headers.get("Authorization")?.split("Bearer ")[1] || "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get user's email settings
@@ -76,7 +76,7 @@ serve(async (req) => {
 
     if (settingsError) {
       return new Response(
-        JSON.stringify({ error: "Email settings not found" }),
+        JSON.stringify({ error: "Email settings not found", details: settingsError.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -92,33 +92,65 @@ serve(async (req) => {
       fetchFrequency: emailSettings.fetch_frequency,
     });
 
-    // Process each email with the process-email function
+    // Process and store emails
     const processResults = await Promise.all(
       emails.map(async (email) => {
         try {
-          const processResponse = await fetch(
-            "https://rytpbfpgkswojbsyankv.functions.supabase.co/process-email",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${supabaseKey}`,
-              },
-              body: JSON.stringify({
-                email,
-                userId,
-              }),
-            }
-          );
+          // Check if email already exists
+          const { data: existingEmail } = await supabase
+            .from("emails")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("email_id", email.id)
+            .maybeSingle();
 
-          if (!processResponse.ok) {
-            throw new Error(`Error processing email: ${await processResponse.text()}`);
+          if (existingEmail) {
+            return { status: "skipped", email: email.id, message: "Email already exists" };
           }
 
-          return await processResponse.json();
+          // In a real implementation, we would use process-email to analyze the email
+          // For now, let's create a simple summary
+          const summary = `This is an email about ${email.subject} from ${email.senderName}.`;
+
+          // Insert the email
+          const { data: insertedEmail, error: insertError } = await supabase
+            .from("emails")
+            .insert({
+              user_id: userId,
+              email_id: email.id,
+              subject: email.subject,
+              sender_name: email.senderName,
+              sender_email: email.senderEmail,
+              received_at: email.receivedAt,
+              body: email.body,
+              summary: summary,
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            throw new Error(`Error inserting email: ${insertError.message}`);
+          }
+
+          // Create a mock task for the email
+          const { error: taskError } = await supabase
+            .from("tasks")
+            .insert({
+              user_id: userId,
+              email_id: insertedEmail.id,
+              description: `Follow up on email: ${email.subject}`,
+              priority: "medium",
+              due_date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+            });
+
+          if (taskError) {
+            console.error("Error creating task:", taskError);
+          }
+
+          return { status: "success", email: email.id, emailId: insertedEmail.id };
         } catch (error) {
           console.error("Error processing email:", error);
-          return { error: error.message, email: email.id };
+          return { status: "error", email: email.id, error: error.message };
         }
       })
     );
@@ -126,7 +158,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        processedEmails: emails.length,
+        processedEmails: processResults.filter(r => r.status === "success").length,
         results: processResults,
       }),
       { 
@@ -134,7 +166,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in sync-emails function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),

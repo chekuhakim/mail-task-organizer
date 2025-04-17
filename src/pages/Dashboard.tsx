@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,14 +19,12 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Fetch data from Supabase
   useEffect(() => {
     if (!user) return;
 
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch emails
         const { data: emailsData, error: emailsError } = await supabase
           .from("emails")
           .select("*")
@@ -36,7 +33,6 @@ const Dashboard = () => {
 
         if (emailsError) throw emailsError;
 
-        // Fetch tasks
         const { data: tasksData, error: tasksError } = await supabase
           .from("tasks")
           .select(`
@@ -52,7 +48,6 @@ const Dashboard = () => {
 
         if (tasksError) throw tasksError;
 
-        // Convert data to fit our types
         const mappedEmails: Email[] = emailsData.map(email => ({
           id: email.id,
           subject: email.subject,
@@ -65,10 +60,9 @@ const Dashboard = () => {
           body: email.body || "",
           read: email.read || false,
           starred: email.starred || false,
-          tasks: 0, // We'll update this below
+          tasks: 0,
         }));
 
-        // Count tasks per email
         const taskCounts: Record<string, number> = {};
         tasksData.forEach(task => {
           if (!taskCounts[task.email_id]) {
@@ -77,12 +71,10 @@ const Dashboard = () => {
           taskCounts[task.email_id]++;
         });
 
-        // Update email task counts
         mappedEmails.forEach(email => {
           email.tasks = taskCounts[email.id] || 0;
         });
 
-        // Convert tasks to fit our type
         const mappedTasks: Task[] = tasksData.map(task => ({
           id: task.id,
           description: task.description,
@@ -123,40 +115,26 @@ const Dashboard = () => {
 
     setIsSyncing(true);
     try {
-      // Call the sync-emails edge function
-      const response = await fetch(
-        "https://rytpbfpgkswojbsyankv.functions.supabase.co/sync-emails",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ userId: user.id }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('sync-emails', {
+        body: { userId: user.id },
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to sync emails");
-      }
-
-      const result = await response.json();
+      if (error) throw new Error(error.message);
 
       toast({
         title: "Sync Completed",
-        description: `Successfully processed ${result.processedEmails} emails`,
+        description: `Successfully processed ${data.processedEmails || 0} emails`,
       });
 
-      // Refresh the data
-      // Refetch emails
-      const { data: emailsData } = await supabase
+      const { data: emailsData, error: emailsError } = await supabase
         .from("emails")
         .select("*")
         .eq("user_id", user.id)
         .order("received_at", { ascending: false });
 
-      // Refetch tasks
-      const { data: tasksData } = await supabase
+      if (emailsError) throw emailsError;
+
+      const { data: tasksData, error: tasksError } = await supabase
         .from("tasks")
         .select(`
           *,
@@ -169,8 +147,9 @@ const Dashboard = () => {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      // Convert data to fit our types (same logic as in useEffect)
-      const mappedEmails: Email[] = emailsData!.map(email => ({
+      if (tasksError) throw tasksError;
+
+      const mappedEmails: Email[] = emailsData.map(email => ({
         id: email.id,
         subject: email.subject,
         sender: {
@@ -182,25 +161,22 @@ const Dashboard = () => {
         body: email.body || "",
         read: email.read || false,
         starred: email.starred || false,
-        tasks: 0, // We'll update this below
+        tasks: 0,
       }));
 
-      // Count tasks per email
       const taskCounts: Record<string, number> = {};
-      tasksData!.forEach(task => {
+      tasksData.forEach(task => {
         if (!taskCounts[task.email_id]) {
           taskCounts[task.email_id] = 0;
         }
         taskCounts[task.email_id]++;
       });
 
-      // Update email task counts
       mappedEmails.forEach(email => {
         email.tasks = taskCounts[email.id] || 0;
       });
 
-      // Convert tasks to fit our type
-      const mappedTasks: Task[] = tasksData!.map(task => ({
+      const mappedTasks: Task[] = tasksData.map(task => ({
         id: task.id,
         description: task.description,
         completed: task.completed || false,
