@@ -52,6 +52,20 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Email task organizer specific colors
+				email: {
+					DEFAULT: '#3b82f6', // Blue 500
+					hover: '#2563eb', // Blue 600
+					foreground: '#ffffff',
+					muted: '#93c5fd', // Blue 300
+					light: '#dbeafe', // Blue 100
+				},
+				task: {
+					DEFAULT: '#8b5cf6', // Violet 500
+					hover: '#7c3aed', // Violet 600
+					complete: '#10b981', // Emerald 500
+					pending: '#f59e0b', // Amber 500
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
