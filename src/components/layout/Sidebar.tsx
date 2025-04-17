@@ -3,9 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BarChart2, Calendar, CheckCircle, Inbox, Mail, Settings } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export const Sidebar = () => {
   const location = useLocation();
+  const { user } = useAuth();
   
   const navItems = [
     { name: "Dashboard", path: "/", icon: BarChart2 },
@@ -15,6 +18,16 @@ export const Sidebar = () => {
     { name: "Email", path: "/email", icon: Mail },
     { name: "Settings", path: "/settings", icon: Settings },
   ];
+
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   return (
     <aside className="w-64 bg-sidebar border-r border-border flex flex-col h-screen">
@@ -44,12 +57,12 @@ export const Sidebar = () => {
       
       <div className="p-4 border-t border-border">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-            <span className="text-sm font-medium">JD</span>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium">John Doe</p>
-            <p className="text-xs text-muted-foreground">john@example.com</p>
+          <Avatar className="h-8 w-8 mr-3">
+            <AvatarFallback>{getInitials(user?.user_metadata?.full_name || user?.email)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-medium">{user?.user_metadata?.full_name || "User"}</p>
+            <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
         </div>
       </div>

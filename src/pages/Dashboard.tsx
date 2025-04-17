@@ -1,17 +1,261 @@
 
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, Clock, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Clock, Loader2, Mail, RefreshCw } from "lucide-react";
 import { EmailList } from "@/components/email/EmailList";
 import { TaskList } from "@/components/tasks/TaskList";
 import { StatsCards } from "@/components/dashboard/StatsCards";
+import { useToast } from "@/hooks/use-toast";
+import { Email, Task } from "@/types";
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [emails, setEmails] = useState<Email[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Fetch data from Supabase
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch emails
+        const { data: emailsData, error: emailsError } = await supabase
+          .from("emails")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("received_at", { ascending: false });
+
+        if (emailsError) throw emailsError;
+
+        // Fetch tasks
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("tasks")
+          .select(`
+            *,
+            emails!inner (
+              subject,
+              sender_name,
+              sender_email
+            )
+          `)
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (tasksError) throw tasksError;
+
+        // Convert data to fit our types
+        const mappedEmails: Email[] = emailsData.map(email => ({
+          id: email.id,
+          subject: email.subject,
+          sender: {
+            name: email.sender_name,
+            email: email.sender_email,
+          },
+          receivedAt: email.received_at,
+          summary: email.summary || "",
+          body: email.body || "",
+          read: email.read || false,
+          starred: email.starred || false,
+          tasks: 0, // We'll update this below
+        }));
+
+        // Count tasks per email
+        const taskCounts: Record<string, number> = {};
+        tasksData.forEach(task => {
+          if (!taskCounts[task.email_id]) {
+            taskCounts[task.email_id] = 0;
+          }
+          taskCounts[task.email_id]++;
+        });
+
+        // Update email task counts
+        mappedEmails.forEach(email => {
+          email.tasks = taskCounts[email.id] || 0;
+        });
+
+        // Convert tasks to fit our type
+        const mappedTasks: Task[] = tasksData.map(task => ({
+          id: task.id,
+          description: task.description,
+          completed: task.completed || false,
+          priority: task.priority as "low" | "medium" | "high",
+          createdAt: task.created_at,
+          dueDate: task.due_date,
+          source: {
+            type: "email",
+            id: task.email_id,
+            subject: task.emails.subject,
+            sender: {
+              name: task.emails.sender_name,
+              email: task.emails.sender_email,
+            }
+          }
+        }));
+
+        setEmails(mappedEmails);
+        setTasks(mappedTasks);
+      } catch (error: any) {
+        console.error("Error fetching data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user, toast]);
+
+  const syncEmails = async () => {
+    if (!user) return;
+
+    setIsSyncing(true);
+    try {
+      // Call the sync-emails edge function
+      const response = await fetch(
+        "https://rytpbfpgkswojbsyankv.functions.supabase.co/sync-emails",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ userId: user.id }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to sync emails");
+      }
+
+      const result = await response.json();
+
+      toast({
+        title: "Sync Completed",
+        description: `Successfully processed ${result.processedEmails} emails`,
+      });
+
+      // Refresh the data
+      // Refetch emails
+      const { data: emailsData } = await supabase
+        .from("emails")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("received_at", { ascending: false });
+
+      // Refetch tasks
+      const { data: tasksData } = await supabase
+        .from("tasks")
+        .select(`
+          *,
+          emails!inner (
+            subject,
+            sender_name,
+            sender_email
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      // Convert data to fit our types (same logic as in useEffect)
+      const mappedEmails: Email[] = emailsData!.map(email => ({
+        id: email.id,
+        subject: email.subject,
+        sender: {
+          name: email.sender_name,
+          email: email.sender_email,
+        },
+        receivedAt: email.received_at,
+        summary: email.summary || "",
+        body: email.body || "",
+        read: email.read || false,
+        starred: email.starred || false,
+        tasks: 0, // We'll update this below
+      }));
+
+      // Count tasks per email
+      const taskCounts: Record<string, number> = {};
+      tasksData!.forEach(task => {
+        if (!taskCounts[task.email_id]) {
+          taskCounts[task.email_id] = 0;
+        }
+        taskCounts[task.email_id]++;
+      });
+
+      // Update email task counts
+      mappedEmails.forEach(email => {
+        email.tasks = taskCounts[email.id] || 0;
+      });
+
+      // Convert tasks to fit our type
+      const mappedTasks: Task[] = tasksData!.map(task => ({
+        id: task.id,
+        description: task.description,
+        completed: task.completed || false,
+        priority: task.priority as "low" | "medium" | "high",
+        createdAt: task.created_at,
+        dueDate: task.due_date,
+        source: {
+          type: "email",
+          id: task.email_id,
+          subject: task.emails.subject,
+          sender: {
+            name: task.emails.sender_name,
+            email: task.emails.sender_email,
+          }
+        }
+      }));
+
+      setEmails(mappedEmails);
+      setTasks(mappedTasks);
+    } catch (error: any) {
+      console.error("Error syncing emails:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sync emails",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">View your daily email summaries and tasks.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">View your daily email summaries and tasks.</p>
+        </div>
+        <Button 
+          onClick={syncEmails} 
+          disabled={isSyncing}
+          className="flex items-center gap-2"
+        >
+          {isSyncing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Syncing...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4" />
+              Sync Emails
+            </>
+          )}
+        </Button>
       </div>
       
       <StatsCards />
@@ -37,7 +281,21 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EmailList />
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : emails.length > 0 ? (
+                <EmailList emails={emails} setEmails={setEmails} />
+              ) : (
+                <div className="text-center py-8">
+                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium">No emails yet</h3>
+                  <p className="text-muted-foreground">
+                    Sync your emails to see AI-generated summaries here
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -51,7 +309,21 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <TaskList />
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : tasks.length > 0 ? (
+                <TaskList tasks={tasks} setTasks={setTasks} />
+              ) : (
+                <div className="text-center py-8">
+                  <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium">No tasks yet</h3>
+                  <p className="text-muted-foreground">
+                    Tasks extracted from emails will appear here
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

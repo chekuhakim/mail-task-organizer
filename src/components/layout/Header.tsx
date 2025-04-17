@@ -1,9 +1,37 @@
 
-import { Bell, Mail, Search, Settings, User } from "lucide-react";
+import { Bell, LogOut, Mail, Search, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export const Header = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   return (
     <header className="border-b border-border p-4 bg-white">
       <div className="flex items-center justify-between">
@@ -22,15 +50,45 @@ export const Header = () => {
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate("/email")}
+          >
             <Mail className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate("/settings")}
+          >
             <Settings className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <User className="h-5 w-5" />
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar>
+                  <AvatarFallback>{getInitials(user?.user_metadata?.full_name || user?.email)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium">{user?.user_metadata?.full_name || "User"}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
