@@ -121,9 +121,13 @@ const Dashboard = () => {
 
       if (error) throw new Error(error.message);
 
+      const successMessage = data.usesMockData 
+        ? "Successfully processed mock emails. Please configure valid IMAP settings for real emails."
+        : `Successfully processed ${data.processedEmails || 0} emails`;
+
       toast({
         title: "Sync Completed",
-        description: `Successfully processed ${data.processedEmails || 0} emails`,
+        description: successMessage,
       });
 
       const { data: emailsData, error: emailsError } = await supabase

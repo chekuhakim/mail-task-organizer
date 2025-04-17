@@ -2,6 +2,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.26.0";
+import { ImapFlow } from "https://esm.sh/imapflow@1.0.153";
+import { ParsedMail, simpleParser } from "https://esm.sh/mailparser@3.6.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,14 +20,74 @@ interface EmailSettings {
   fetchFrequency: string;
 }
 
-// Mock function to simulate fetching emails from an IMAP/POP3 server
-async function fetchEmailsFromServer(settings: EmailSettings) {
-  console.log("Fetching emails with settings:", settings);
+async function fetchEmailsFromIMAP(settings: EmailSettings): Promise<any[]> {
+  console.log("Fetching emails with settings:", {
+    ...settings,
+    password: "***REDACTED***", // Don't log the actual password
+  });
   
-  // In a real implementation, this would use an IMAP/POP3 library
-  // For now, return mock data
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+  const client = new ImapFlow({
+    host: settings.server,
+    port: parseInt(settings.port),
+    secure: settings.useSSL,
+    auth: {
+      user: settings.username,
+      pass: settings.password,
+    },
+    logger: false,
+  });
+
+  const emails = [];
   
+  try {
+    // Connect to the server
+    await client.connect();
+    
+    // Select and lock the mailbox
+    let mailbox = await client.mailboxOpen('INBOX');
+    console.log(`Mailbox has ${mailbox.exists} messages`);
+    
+    // Fetch latest messages
+    const messageCount = mailbox.exists > 10 ? 10 : mailbox.exists;
+    
+    if (messageCount > 0) {
+      for (let i = mailbox.exists; i > mailbox.exists - messageCount; i--) {
+        try {
+          // Get message content
+          const message = await client.fetchOne(i, { source: true });
+          if (!message || !message.source) continue;
+          
+          // Parse the email
+          const parsedEmail = await simpleParser(message.source);
+          
+          const email = {
+            id: parsedEmail.messageId || `email-${i}`,
+            subject: parsedEmail.subject || "(No Subject)",
+            senderName: parsedEmail.from?.value[0]?.name || parsedEmail.from?.text || "Unknown Sender",
+            senderEmail: parsedEmail.from?.value[0]?.address || "unknown@example.com",
+            receivedAt: parsedEmail.date?.toISOString() || new Date().toISOString(),
+            body: parsedEmail.text || parsedEmail.textAsHtml || "",
+          };
+          
+          emails.push(email);
+        } catch (fetchError) {
+          console.error(`Error fetching email ${i}:`, fetchError);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error connecting to IMAP server:", error);
+    throw error;
+  } finally {
+    // Close the connection
+    await client.logout();
+  }
+  
+  return emails;
+}
+
+// Fallback to mock emails if IMAP connection fails
+function getMockEmails() {
   return [
     {
       id: "email1",
@@ -82,15 +144,30 @@ serve(async (req) => {
     }
 
     // Fetch emails from server
-    const emails = await fetchEmailsFromServer({
-      protocol: emailSettings.protocol,
-      server: emailSettings.server,
-      port: emailSettings.port,
-      username: emailSettings.username,
-      password: emailSettings.password,
-      useSSL: emailSettings.use_ssl,
-      fetchFrequency: emailSettings.fetch_frequency,
-    });
+    let emails = [];
+    let usesMockData = false;
+    try {
+      if (emailSettings.protocol === "imap") {
+        emails = await fetchEmailsFromIMAP({
+          protocol: emailSettings.protocol,
+          server: emailSettings.server,
+          port: emailSettings.port,
+          username: emailSettings.username,
+          password: emailSettings.password,
+          useSSL: emailSettings.use_ssl,
+          fetchFrequency: emailSettings.fetch_frequency,
+        });
+      } else {
+        // For now, we only support IMAP, so use mock data for POP3
+        emails = getMockEmails();
+        usesMockData = true;
+        console.log("POP3 not yet implemented, using mock data");
+      }
+    } catch (fetchError) {
+      console.error("Error fetching emails, falling back to mock data:", fetchError);
+      emails = getMockEmails();
+      usesMockData = true;
+    }
 
     // Process and store emails
     const processResults = await Promise.all(
@@ -160,6 +237,7 @@ serve(async (req) => {
         success: true,
         processedEmails: processResults.filter(r => r.status === "success").length,
         results: processResults,
+        usesMockData,
       }),
       { 
         status: 200, 
