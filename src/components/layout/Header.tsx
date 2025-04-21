@@ -1,4 +1,3 @@
-
 import { Bell, LogOut, Mail, Search, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +11,12 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useSearch } from "@/context/SearchContext";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { search, setSearch } = useSearch();
 
   const handleSignOut = async () => {
     await signOut();
@@ -42,6 +43,8 @@ export const Header = () => {
               type="search"
               placeholder="Search emails and tasks..."
               className="w-full pl-9 bg-background"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
             />
           </div>
         </div>

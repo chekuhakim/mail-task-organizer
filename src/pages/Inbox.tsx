@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +7,12 @@ import { Inbox as InboxIcon, Loader2, RefreshCw } from "lucide-react";
 import { EmailList } from "@/components/email/EmailList";
 import { useToast } from "@/hooks/use-toast";
 import { Email } from "@/types";
+import { useSearch } from "@/context/SearchContext";
 
 const Inbox = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { search } = useSearch();
   const [emails, setEmails] = useState<Email[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -97,7 +98,6 @@ const Inbox = () => {
         description: successMessage,
       });
 
-      // Refresh the emails list
       fetchEmails();
     } catch (error: any) {
       console.error("Error syncing emails:", error);
@@ -110,6 +110,16 @@ const Inbox = () => {
       setIsSyncing(false);
     }
   };
+
+  const filteredEmails = search
+    ? emails.filter(email => (
+        email.subject.toLowerCase().includes(search.toLowerCase()) ||
+        email.sender.name.toLowerCase().includes(search.toLowerCase()) ||
+        email.sender.email.toLowerCase().includes(search.toLowerCase()) ||
+        email.body?.toLowerCase().includes(search.toLowerCase()) ||
+        email.summary?.toLowerCase().includes(search.toLowerCase())
+      ))
+    : emails;
 
   return (
     <div className="space-y-6">
@@ -149,14 +159,14 @@ const Inbox = () => {
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : emails.length > 0 ? (
-            <EmailList emails={emails} setEmails={setEmails} />
+          ) : filteredEmails.length > 0 ? (
+            <EmailList emails={filteredEmails} setEmails={setEmails} />
           ) : (
             <div className="text-center py-8">
               <InboxIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium">No emails yet</h3>
+              <h3 className="text-lg font-medium">No emails found</h3>
               <p className="text-muted-foreground">
-                Sync your emails to see them here
+                {search ? "No results match your search." : "Sync your emails to see them here"}
               </p>
             </div>
           )}

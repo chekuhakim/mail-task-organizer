@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +7,12 @@ import { CheckCircle, Loader2 } from "lucide-react";
 import { TaskList } from "@/components/tasks/TaskList";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/types";
+import { useSearch } from "@/context/SearchContext";
 
 const Tasks = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { search } = useSearch();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +87,18 @@ const Tasks = () => {
     }
   };
 
+  const filterTasksBySearch = (taskArr: Task[]) =>
+    search
+      ? taskArr.filter((task) => 
+          task.description.toLowerCase().includes(search.toLowerCase()) ||
+          task.source.subject.toLowerCase().includes(search.toLowerCase()) ||
+          task.source.sender.name.toLowerCase().includes(search.toLowerCase()) ||
+          task.source.sender.email.toLowerCase().includes(search.toLowerCase()))
+      : taskArr;
+
+  const filteredActive = filterTasksBySearch(tasks);
+  const filteredCompleted = filterTasksBySearch(completedTasks);
+
   return (
     <div className="space-y-6">
       <div>
@@ -112,14 +125,14 @@ const Tasks = () => {
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : tasks.length > 0 ? (
-                <TaskList tasks={tasks} setTasks={setTasks} onTaskUpdate={handleTaskUpdate} />
+              ) : filteredActive.length > 0 ? (
+                <TaskList tasks={filteredActive} setTasks={setTasks} onTaskUpdate={handleTaskUpdate} />
               ) : (
                 <div className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">No active tasks</h3>
+                  <h3 className="text-lg font-medium">No active tasks found</h3>
                   <p className="text-muted-foreground">
-                    All your tasks are completed
+                    {search ? "No results match your search." : "All your tasks are completed"}
                   </p>
                 </div>
               )}
@@ -140,14 +153,14 @@ const Tasks = () => {
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : completedTasks.length > 0 ? (
-                <TaskList tasks={completedTasks} setTasks={setCompletedTasks} onTaskUpdate={handleTaskUpdate} />
+              ) : filteredCompleted.length > 0 ? (
+                <TaskList tasks={filteredCompleted} setTasks={setCompletedTasks} onTaskUpdate={handleTaskUpdate} />
               ) : (
                 <div className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">No completed tasks</h3>
+                  <h3 className="text-lg font-medium">No completed tasks found</h3>
                   <p className="text-muted-foreground">
-                    Complete some tasks to see them here
+                    {search ? "No results match your search." : "Complete some tasks to see them here"}
                   </p>
                 </div>
               )}
