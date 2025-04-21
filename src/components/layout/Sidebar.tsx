@@ -15,7 +15,6 @@ export const Sidebar = () => {
     { name: "Inbox", path: "/inbox", icon: Inbox },
     { name: "Tasks", path: "/tasks", icon: CheckCircle },
     { name: "Calendar", path: "/calendar", icon: Calendar },
-    { name: "Email", path: "/email", icon: Mail },
     { name: "Settings", path: "/settings", icon: Settings },
   ];
 
@@ -45,7 +44,9 @@ export const Sidebar = () => {
               variant="ghost"
               className={cn(
                 "w-full justify-start",
-                location.pathname === item.path && "bg-accent text-accent-foreground"
+                (location.pathname === item.path || 
+                 (item.path === "/inbox" && location.pathname.startsWith("/email/"))) && 
+                 "bg-accent text-accent-foreground"
               )}
             >
               <item.icon className="mr-2 h-5 w-5" />

@@ -17,13 +17,15 @@ import {
 import { Task } from "@/types";
 import { formatDueDate, getInitials } from "@/lib/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 interface TaskListProps {
   tasks: Task[];
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+  onTaskUpdate?: (task: Task) => void;
 }
 
-export const TaskList = ({ tasks, setTasks }: TaskListProps) => {
+export const TaskList = ({ tasks, setTasks, onTaskUpdate }: TaskListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
@@ -38,13 +40,21 @@ export const TaskList = ({ tasks, setTasks }: TaskListProps) => {
     if (!user) return;
     
     // Find the task and toggle its completed status in state
-    const updatedTasks = tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
+    const taskIndex = tasks.findIndex(t => t.id === id);
+    if (taskIndex === -1) return;
+    
+    const task = tasks[taskIndex];
+    const updatedTask = { ...task, completed: !task.completed };
+    
+    // Update local state
+    const updatedTasks = [...tasks];
+    updatedTasks[taskIndex] = updatedTask;
     setTasks(updatedTasks);
     
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
+    // Notify parent about the update if callback exists
+    if (onTaskUpdate) {
+      onTaskUpdate(updatedTask);
+    }
     
     try {
       setLoading(id, true);
@@ -52,14 +62,22 @@ export const TaskList = ({ tasks, setTasks }: TaskListProps) => {
       // Update the database
       const { error } = await supabase
         .from("tasks")
-        .update({ completed: !task.completed })
+        .update({ completed: updatedTask.completed })
         .eq("id", id)
         .eq("user_id", user.id);
       
       if (error) throw error;
     } catch (error: any) {
       // Revert on error
-      setTasks(tasks);
+      const revertedTasks = [...tasks];
+      revertedTasks[taskIndex] = task;
+      setTasks(revertedTasks);
+      
+      // Notify parent about the revert if callback exists
+      if (onTaskUpdate) {
+        onTaskUpdate(task);
+      }
+      
       toast({
         title: "Error",
         description: "Failed to update task",
@@ -184,9 +202,11 @@ export const TaskList = ({ tasks, setTasks }: TaskListProps) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem className="flex items-center">
-                    <Link2 className="mr-2 h-4 w-4" />
-                    <span>View Source Email</span>
+                  <DropdownMenuItem className="flex items-center" asChild>
+                    <Link to={`/email/${task.source.id}`}>
+                      <Link2 className="mr-2 h-4 w-4" />
+                      <span>View Source Email</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="flex items-center">
                     <Tag className="mr-2 h-4 w-4" />

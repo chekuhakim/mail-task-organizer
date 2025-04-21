@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +21,7 @@ interface EmailListProps {
 export const EmailList = ({ emails, setEmails }: EmailListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
 
   const setLoading = (id: string, isLoading: boolean) => {
@@ -139,18 +141,28 @@ export const EmailList = ({ emails, setEmails }: EmailListProps) => {
     }
   };
 
+  const handleEmailClick = (id: string) => {
+    navigate(`/email/${id}`);
+  };
+
   return (
     <div className="space-y-1">
       {emails.map((email, index) => (
         <div key={email.id}>
-          <div className={`p-3 rounded-md flex items-start gap-4 hover:bg-muted/50 ${!email.read ? 'bg-blue-50' : ''}`}>
+          <div 
+            className={`p-3 rounded-md flex items-start gap-4 hover:bg-muted/50 ${!email.read ? 'bg-blue-50' : ''} cursor-pointer`}
+            onClick={() => handleEmailClick(email.id)}
+          >
             <div className="flex items-center gap-2">
-              <Checkbox id={`select-${email.id}`} />
+              <Checkbox id={`select-${email.id}`} onClick={(e) => e.stopPropagation()} />
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8" 
-                onClick={() => toggleStar(email.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleStar(email.id);
+                }}
                 disabled={isLoading(email.id)}
               >
                 {isLoading(email.id) ? (
@@ -199,12 +211,15 @@ export const EmailList = ({ emails, setEmails }: EmailListProps) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8"
-                onClick={() => toggleRead(email.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleRead(email.id);
+                }}
                 disabled={isLoading(email.id)}
               >
                 {isLoading(email.id) ? (
@@ -217,7 +232,10 @@ export const EmailList = ({ emails, setEmails }: EmailListProps) => {
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8"
-                onClick={() => deleteEmail(email.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteEmail(email.id);
+                }}
                 disabled={isLoading(email.id)}
               >
                 {isLoading(email.id) ? (

@@ -5,6 +5,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
+import Inbox from "./pages/Inbox";
+import Tasks from "./pages/Tasks";
+import Calendar from "./pages/Calendar";
+import EmailView from "./pages/EmailView";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -31,6 +35,10 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
+                <Route path="inbox" element={<Inbox />} />
+                <Route path="email/:id" element={<EmailView />} />
+                <Route path="tasks" element={<Tasks />} />
+                <Route path="calendar" element={<Calendar />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Route>
