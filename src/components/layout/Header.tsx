@@ -12,15 +12,31 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSearch } from "@/context/SearchContext";
+import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/hooks/use-theme";
+import { Moon, Sun } from "lucide-react";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { search, setSearch } = useSearch();
+  const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const handleNotificationClick = () => {
+    toast({
+      title: "Notifications",
+      description: "No new notifications at this time",
+    });
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
   };
 
   const getInitials = (name?: string) => {
@@ -34,7 +50,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="border-b border-border p-4 bg-white">
+    <header className="border-b border-border p-4 bg-background">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 w-1/3">
           <div className="relative w-full">
@@ -42,7 +58,7 @@ export const Header = () => {
             <Input
               type="search"
               placeholder="Search emails and tasks..."
-              className="w-full pl-9 bg-background"
+              className="w-full pl-9"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -50,15 +66,30 @@ export const Header = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleNotificationClick}
+          >
             <Bell className="h-5 w-5" />
           </Button>
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate("/email")}
+            onClick={() => navigate("/inbox")}
           >
             <Mail className="h-5 w-5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={toggleTheme}
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
           </Button>
           <Button 
             variant="ghost" 
