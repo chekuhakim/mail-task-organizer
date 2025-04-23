@@ -1,7 +1,9 @@
+
 import { Task } from "@/types";
 import { TaskItem } from "./TaskItem";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskListProps {
   tasks: Task[];
