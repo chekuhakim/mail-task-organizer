@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Inbox as InboxIcon, Loader2, RefreshCw } from "lucide-react";
+import { Inbox as InboxIcon } from "lucide-react";
 import { EmailList } from "@/components/email/EmailList";
 import { useToast } from "@/hooks/use-toast";
 import { Email } from "@/types";
@@ -15,7 +14,6 @@ const Inbox = () => {
   const { search } = useSearch();
   const [emails, setEmails] = useState<Email[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -78,39 +76,6 @@ const Inbox = () => {
     }
   };
 
-  const syncEmails = async () => {
-    if (!user) return;
-
-    setIsSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('sync-emails', {
-        body: { userId: user.id },
-      });
-
-      if (error) throw new Error(error.message);
-
-      const successMessage = data.usesMockData 
-        ? "Successfully processed mock emails. Please configure valid IMAP settings for real emails."
-        : `Successfully processed ${data.processedEmails || 0} emails`;
-
-      toast({
-        title: "Sync Completed",
-        description: successMessage,
-      });
-
-      fetchEmails();
-    } catch (error: any) {
-      console.error("Error syncing emails:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to sync emails",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   const filteredEmails = search
     ? emails.filter(email => (
         email.subject.toLowerCase().includes(search.toLowerCase()) ||
@@ -123,28 +88,9 @@ const Inbox = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
-          <p className="text-muted-foreground">View and manage your emails.</p>
-        </div>
-        <Button 
-          onClick={syncEmails} 
-          disabled={isSyncing}
-          className="flex items-center gap-2"
-        >
-          {isSyncing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Sync Emails
-            </>
-          )}
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
+        <p className="text-muted-foreground">View and manage your emails.</p>
       </div>
       
       <Card>

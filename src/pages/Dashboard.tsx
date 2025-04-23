@@ -3,8 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Loader2, Mail, RefreshCw } from "lucide-react";
+import { CheckCircle, Mail } from "lucide-react";
 import { EmailList } from "@/components/email/EmailList";
 import { TaskList } from "@/components/tasks/TaskList";
 import { StatsCards } from "@/components/dashboard/StatsCards";
@@ -17,7 +16,6 @@ const Dashboard = () => {
   const [emails, setEmails] = useState<Email[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -110,132 +108,11 @@ const Dashboard = () => {
     fetchData();
   }, [user, toast]);
 
-  const syncEmails = async () => {
-    if (!user) return;
-
-    setIsSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('sync-emails', {
-        body: { userId: user.id },
-      });
-
-      if (error) throw new Error(error.message);
-
-      const successMessage = data.usesMockData 
-        ? "Successfully processed mock emails. Please configure valid IMAP settings for real emails."
-        : `Successfully processed ${data.processedEmails || 0} emails`;
-
-      toast({
-        title: "Sync Completed",
-        description: successMessage,
-      });
-
-      const { data: emailsData, error: emailsError } = await supabase
-        .from("emails")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("received_at", { ascending: false });
-
-      if (emailsError) throw emailsError;
-
-      const { data: tasksData, error: tasksError } = await supabase
-        .from("tasks")
-        .select(`
-          *,
-          emails!inner (
-            subject,
-            sender_name,
-            sender_email
-          )
-        `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (tasksError) throw tasksError;
-
-      const mappedEmails: Email[] = emailsData.map(email => ({
-        id: email.id,
-        subject: email.subject,
-        sender: {
-          name: email.sender_name,
-          email: email.sender_email,
-        },
-        receivedAt: email.received_at,
-        summary: email.summary || "",
-        body: email.body || "",
-        read: email.read || false,
-        starred: email.starred || false,
-        tasks: 0,
-      }));
-
-      const taskCounts: Record<string, number> = {};
-      tasksData.forEach(task => {
-        if (!taskCounts[task.email_id]) {
-          taskCounts[task.email_id] = 0;
-        }
-        taskCounts[task.email_id]++;
-      });
-
-      mappedEmails.forEach(email => {
-        email.tasks = taskCounts[email.id] || 0;
-      });
-
-      const mappedTasks: Task[] = tasksData.map(task => ({
-        id: task.id,
-        description: task.description,
-        completed: task.completed || false,
-        priority: task.priority as "low" | "medium" | "high",
-        createdAt: task.created_at,
-        dueDate: task.due_date,
-        source: {
-          type: "email",
-          id: task.email_id,
-          subject: task.emails.subject,
-          sender: {
-            name: task.emails.sender_name,
-            email: task.emails.sender_email,
-          }
-        }
-      }));
-
-      setEmails(mappedEmails);
-      setTasks(mappedTasks);
-    } catch (error: any) {
-      console.error("Error syncing emails:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to sync emails",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">View your daily email summaries and tasks.</p>
-        </div>
-        <Button 
-          onClick={syncEmails} 
-          disabled={isSyncing}
-          className="flex items-center gap-2"
-        >
-          {isSyncing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Sync Emails
-            </>
-          )}
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">View your daily email summaries and tasks.</p>
       </div>
       
       <StatsCards />
