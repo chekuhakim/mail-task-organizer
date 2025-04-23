@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,11 +80,31 @@ const Tasks = () => {
     if (updatedTask.completed) {
       // Move from active to completed
       setTasks(prev => prev.filter(task => task.id !== updatedTask.id));
-      setCompletedTasks(prev => [updatedTask, ...prev]);
+      setCompletedTasks(prev => {
+        // Check if the task is already in the completed list
+        const exists = prev.some(task => task.id === updatedTask.id);
+        if (exists) {
+          // Update the existing task
+          return prev.map(task => task.id === updatedTask.id ? updatedTask : task);
+        } else {
+          // Add the task to the completed list
+          return [updatedTask, ...prev];
+        }
+      });
     } else {
       // Move from completed to active
       setCompletedTasks(prev => prev.filter(task => task.id !== updatedTask.id));
-      setTasks(prev => [updatedTask, ...prev]);
+      setTasks(prev => {
+        // Check if the task is already in the active list
+        const exists = prev.some(task => task.id === updatedTask.id);
+        if (exists) {
+          // Update the existing task
+          return prev.map(task => task.id === updatedTask.id ? updatedTask : task);
+        } else {
+          // Add the task to the active list
+          return [updatedTask, ...prev];
+        }
+      });
     }
   };
 

@@ -71,7 +71,8 @@ export const TaskItem = ({ task, onTaskUpdate, onTaskDelete }: TaskItemProps) =>
       
       if (error) throw error;
       
-      onTaskUpdate({ ...task, completed: !task.completed });
+      const updatedTask = { ...task, completed: !task.completed };
+      onTaskUpdate(updatedTask);
     } catch (error) {
       console.error("Error updating task:", error);
     } finally {
@@ -92,7 +93,9 @@ export const TaskItem = ({ task, onTaskUpdate, onTaskDelete }: TaskItemProps) =>
       
       if (error) throw error;
       
-      onTaskUpdate({ ...task, priority: newPriority });
+      // Update the local task object with the new priority without creating a new entry
+      const updatedTask = { ...task, priority: newPriority };
+      onTaskUpdate(updatedTask);
     } catch (error) {
       console.error("Error updating task priority:", error);
     } finally {
@@ -114,7 +117,9 @@ export const TaskItem = ({ task, onTaskUpdate, onTaskDelete }: TaskItemProps) =>
       if (error) throw error;
       
       setDate(newDate);
-      onTaskUpdate({ ...task, dueDate: newDate?.toISOString() });
+      // Update the local task object with the new due date without creating a new entry
+      const updatedTask = { ...task, dueDate: newDate?.toISOString() };
+      onTaskUpdate(updatedTask);
     } catch (error) {
       console.error("Error updating task due date:", error);
     } finally {

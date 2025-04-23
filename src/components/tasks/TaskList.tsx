@@ -59,6 +59,20 @@ export const TaskList = ({ tasks, setTasks, onTaskUpdate }: TaskListProps) => {
     // });
   };
 
+  const handleTaskItemUpdate = (updatedTask: Task) => {
+    // Update the task in the array without creating a duplicate
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      )
+    );
+    
+    // If there's an additional onTaskUpdate handler from the parent, call that too
+    if (onTaskUpdate) {
+      onTaskUpdate(updatedTask);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -77,11 +91,7 @@ export const TaskList = ({ tasks, setTasks, onTaskUpdate }: TaskListProps) => {
           <TaskItem
             key={task.id}
             task={task}
-            onTaskUpdate={(updatedTask) => {
-              if (onTaskUpdate) {
-                onTaskUpdate(updatedTask);
-              }
-            }}
+            onTaskUpdate={handleTaskItemUpdate}
             onTaskDelete={handleTaskDelete}
           />
         ))}
