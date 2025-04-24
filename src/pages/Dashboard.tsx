@@ -1,9 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, Mail } from "lucide-react";
+import { CheckCircle, Loader, Mail } from "lucide-react";
 import { EmailList } from "@/components/email/EmailList";
 import { TaskList } from "@/components/tasks/TaskList";
 import { StatsCards } from "@/components/dashboard/StatsCards";
@@ -140,7 +141,7 @@ const Dashboard = () => {
             <CardContent>
               {isLoading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <Loader className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : emails.length > 0 ? (
                 <EmailList emails={emails} setEmails={setEmails} />
@@ -168,7 +169,7 @@ const Dashboard = () => {
             <CardContent>
               {isLoading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <Loader className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : tasks.length > 0 ? (
                 <TaskList tasks={tasks} setTasks={setTasks} />

@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Inbox as InboxIcon } from "lucide-react";
+import { Inbox as InboxIcon, Loader } from "lucide-react";
 import { EmailList } from "@/components/email/EmailList";
 import { useToast } from "@/hooks/use-toast";
 import { Email } from "@/types";
@@ -103,7 +104,7 @@ const Inbox = () => {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : filteredEmails.length > 0 ? (
             <EmailList emails={filteredEmails} setEmails={setEmails} />
