@@ -95,13 +95,13 @@ const Inbox = () => {
       </div>
       
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 md:p-6">
           <CardTitle>All Emails</CardTitle>
           <CardDescription>
             View all your incoming emails.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 md:p-6">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader className="h-8 w-8 animate-spin text-primary" />

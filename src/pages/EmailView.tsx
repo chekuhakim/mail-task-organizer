@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CheckCircle, Loader2, Reply, Star, StarOff, Trash } from "lucide-react";
+import { ArrowLeft, CheckCircle, Loader, Reply, Star, StarOff, Trash } from "lucide-react";
 import { format } from "date-fns";
 import { Task } from "@/types";
 import { getInitials } from "@/lib/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const EmailView = () => {
   const { id } = useParams<{ id: string }>();
@@ -200,7 +201,7 @@ const EmailView = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -232,7 +233,7 @@ const EmailView = () => {
       </div>
       
       <Card>
-        <CardHeader className="flex-row items-start justify-between space-y-0 p-6">
+        <CardHeader className="flex-row items-start justify-between space-y-0 p-4 md:p-6">
           <div className="flex items-start space-x-4">
             <Avatar className="h-10 w-10">
               <AvatarImage src={null} alt={email.sender_name} />
@@ -241,7 +242,7 @@ const EmailView = () => {
             
             <div>
               <div className="font-semibold">{email.sender_name}</div>
-              <div className="text-sm text-muted-foreground">{email.sender_email}</div>
+              <div className="text-sm text-muted-foreground break-all">{email.sender_email}</div>
               <div className="text-xs text-muted-foreground mt-1">
                 {format(new Date(email.received_at), 'PPP p')}
               </div>
@@ -267,18 +268,20 @@ const EmailView = () => {
         
         <Separator />
         
-        <CardContent className="p-6">
+        <CardContent className="p-4 md:p-6">
           {email.summary && (
             <>
               <div className="mb-4">
                 <h3 className="text-sm font-medium mb-2">AI Summary</h3>
-                <div className="bg-muted p-3 rounded-md text-sm">{email.summary}</div>
+                <div className="bg-muted p-3 rounded-md text-sm break-words">{email.summary}</div>
               </div>
               <Separator className="my-4" />
             </>
           )}
           
-          <div className="whitespace-pre-line">{email.body}</div>
+          <ScrollArea className="pr-4 max-h-[50vh] md:max-h-none">
+            <div className="whitespace-pre-line break-words">{email.body}</div>
+          </ScrollArea>
           
           {tasks.length > 0 && (
             <>
@@ -299,11 +302,11 @@ const EmailView = () => {
                       </Button>
                       
                       <div className="flex-1 min-w-0">
-                        <div className={`text-base ${task.completed ? 'line-through text-muted-foreground' : 'font-medium'}`}>
+                        <div className={`text-base break-words ${task.completed ? 'line-through text-muted-foreground' : 'font-medium'}`}>
                           {task.description}
                         </div>
                         
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
                           {getPriorityBadge(task.priority)}
                           
                           {task.dueDate && (
