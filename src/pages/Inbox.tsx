@@ -88,20 +88,20 @@ const Inbox = () => {
     : emails;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Inbox</h1>
-        <p className="text-muted-foreground">View and manage your emails.</p>
+        <h1 className="text-xl md:text-3xl font-bold tracking-tight">Inbox</h1>
+        <p className="text-sm md:text-base text-muted-foreground">View and manage your emails.</p>
       </div>
       
       <Card>
-        <CardHeader className="p-4 md:p-6">
-          <CardTitle>All Emails</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-3 md:p-6">
+          <CardTitle className="text-lg md:text-xl">All Emails</CardTitle>
+          <CardDescription className="text-sm">
             View all your incoming emails.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-2 md:p-6">
+        <CardContent className="p-0 md:p-4">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -110,9 +110,9 @@ const Inbox = () => {
             <EmailList emails={filteredEmails} setEmails={setEmails} />
           ) : (
             <div className="text-center py-8">
-              <InboxIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium">No emails found</h3>
-              <p className="text-muted-foreground">
+              <InboxIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-base md:text-lg font-medium">No emails found</h3>
+              <p className="text-sm text-muted-foreground">
                 {search ? "No results match your search." : "Sync your emails to see them here"}
               </p>
             </div>

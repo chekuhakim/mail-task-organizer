@@ -110,46 +110,46 @@ const Dashboard = () => {
   }, [user, toast]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">View your daily email summaries and tasks.</p>
+        <h1 className="text-xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">View your daily email summaries and tasks.</p>
       </div>
       
       <StatsCards />
       
       <Tabs defaultValue="emails" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="emails" className="flex items-center">
-            <Mail className="mr-2 h-4 w-4" />
+        <TabsList className="w-full md:w-auto">
+          <TabsTrigger value="emails" className="flex-1 md:flex-initial items-center text-xs md:text-sm">
+            <Mail className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
             Emails
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="flex items-center">
-            <CheckCircle className="mr-2 h-4 w-4" />
+          <TabsTrigger value="tasks" className="flex-1 md:flex-initial items-center text-xs md:text-sm">
+            <CheckCircle className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
             Tasks
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="emails" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Email Summaries</CardTitle>
-              <CardDescription>
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="text-lg md:text-xl">Recent Email Summaries</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 AI-generated summaries of your recent emails.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 md:p-4">
               {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex justify-center py-6 md:py-8">
+                  <Loader className="h-6 w-6 md:h-8 md:w-8 animate-spin text-primary" />
                 </div>
               ) : emails.length > 0 ? (
                 <EmailList emails={emails} setEmails={setEmails} />
               ) : (
-                <div className="text-center py-8">
-                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">No emails yet</h3>
-                  <p className="text-muted-foreground">
+                <div className="text-center py-6 md:py-8">
+                  <Mail className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+                  <h3 className="text-base md:text-lg font-medium">No emails yet</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     Sync your emails to see AI-generated summaries here
                   </p>
                 </div>
@@ -160,24 +160,24 @@ const Dashboard = () => {
         
         <TabsContent value="tasks" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Task List</CardTitle>
-              <CardDescription>
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="text-lg md:text-xl">Task List</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 Tasks extracted from your emails.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 md:p-4">
               {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex justify-center py-6 md:py-8">
+                  <Loader className="h-6 w-6 md:h-8 md:w-8 animate-spin text-primary" />
                 </div>
               ) : tasks.length > 0 ? (
                 <TaskList tasks={tasks} setTasks={setTasks} />
               ) : (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">No tasks yet</h3>
-                  <p className="text-muted-foreground">
+                <div className="text-center py-6 md:py-8">
+                  <CheckCircle className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+                  <h3 className="text-base md:text-lg font-medium">No tasks yet</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     Tasks extracted from emails will appear here
                   </p>
                 </div>
