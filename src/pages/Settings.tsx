@@ -5,23 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { SettingsCard } from "@/components/settings/SettingsCard";
-import { EmailSettingsForm, EmailFormValues } from "@/components/settings/EmailSettingsForm";
 import { AISettingsForm, AIFormValues } from "@/components/settings/AISettingsForm";
-import { GeminiAPIKeySection } from "@/components/settings/GeminiAPIKeySection";
+import { SupabaseSettingsForm, SupabaseFormValues } from "@/components/settings/SupabaseSettingsForm";
 
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [savedGeminiApiKey, setSavedGeminiApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [emailSettings, setEmailSettings] = useState<EmailFormValues>({
-    protocol: "imap",
-    server: "",
-    port: "",
-    username: "",
-    password: "",
-    useSSL: true,
-    fetchFrequency: "24h",
+  const [supabaseSettings, setSupabaseSettings] = useState<SupabaseFormValues>({
+    supabaseUrl: "",
+    supabaseKey: "",
   });
   const [aiSettings, setAiSettings] = useState<AIFormValues>({
     processEmailBody: true,
@@ -35,32 +28,42 @@ const Settings = () => {
 
     const loadSettings = async () => {
       try {
-        // Load email settings
-        const { data: emailSettingsData, error: emailError } = await supabase
-          .from("email_settings")
+        // Load Supabase settings
+        const { data: supabaseSettingsData, error: supabaseError } = await supabase
+          .from("supabase_settings")
           .select("*")
           .eq("user_id", user.id)
           .single();
 
-        if (emailError && emailError.code !== "PGRST116") {
-          console.error("Error loading email settings:", emailError);
+        if (supabaseError && supabaseError.code !== "PGRST116") {
+          console.error("Error loading Supabase settings:", supabaseError);
           toast({
             title: "Error",
-            description: "Failed to load email settings",
+            description: "Failed to load Supabase settings",
             variant: "destructive",
           });
         }
 
-        if (emailSettingsData) {
-          setEmailSettings({
-            protocol: emailSettingsData.protocol as "imap" | "pop3",
-            server: emailSettingsData.server,
-            port: emailSettingsData.port,
-            username: emailSettingsData.username,
-            password: emailSettingsData.password,
-            useSSL: emailSettingsData.use_ssl,
-            fetchFrequency: emailSettingsData.fetch_frequency as "6h" | "12h" | "24h",
+        if (supabaseSettingsData) {
+          setSupabaseSettings({
+            supabaseUrl: supabaseSettingsData.supabase_url,
+            supabaseKey: supabaseSettingsData.supabase_key,
           });
+
+          // Store in localStorage for immediate access
+          localStorage.setItem("supabase_url", supabaseSettingsData.supabase_url);
+          localStorage.setItem("supabase_key", supabaseSettingsData.supabase_key);
+        } else {
+          // Check localStorage for existing settings
+          const storedUrl = localStorage.getItem("supabase_url");
+          const storedKey = localStorage.getItem("supabase_key");
+          
+          if (storedUrl && storedKey) {
+            setSupabaseSettings({
+              supabaseUrl: storedUrl,
+              supabaseKey: storedKey,
+            });
+          }
         }
 
         // Load AI settings
@@ -87,11 +90,6 @@ const Settings = () => {
           });
         }
 
-        // Check if Gemini API key exists
-        // In a real app, this would be stored securely, not in localStorage
-        const storedApiKey = localStorage.getItem("gemini_api_key");
-        setSavedGeminiApiKey(storedApiKey);
-
         setIsLoading(false);
       } catch (err) {
         console.error("Error in loading settings:", err);
@@ -114,28 +112,21 @@ const Settings = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Configure your email and AI settings.</p>
+        <p className="text-muted-foreground">Configure your Supabase and AI settings.</p>
       </div>
       
       <SettingsCard 
-        title="Email Connection" 
-        description="Configure your email server settings for daily fetching."
+        title="Supabase Configuration" 
+        description="Configure your Supabase settings for your application."
       >
-        <EmailSettingsForm defaultValues={emailSettings} />
+        <SupabaseSettingsForm defaultValues={supabaseSettings} />
       </SettingsCard>
       
       <SettingsCard 
         title="AI Processing Settings" 
-        description="Configure how Gemini AI processes your emails."
+        description="Configure how AI processes your data."
       >
-        <div className="space-y-6">
-          <GeminiAPIKeySection 
-            savedApiKey={savedGeminiApiKey}
-            setSavedGeminiApiKey={setSavedGeminiApiKey}
-          />
-          
-          <AISettingsForm defaultValues={aiSettings} />
-        </div>
+        <AISettingsForm defaultValues={aiSettings} />
       </SettingsCard>
     </div>
   );
