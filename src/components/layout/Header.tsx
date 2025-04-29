@@ -1,3 +1,4 @@
+
 import { Bell, LogOut, Mail, Search, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { useSearch } from "@/context/SearchContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
 import { Moon, Sun } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -22,6 +24,7 @@ export const Header = () => {
   const { search, setSearch } = useSearch();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
     await signOut();
@@ -52,20 +55,39 @@ export const Header = () => {
   return (
     <header className="border-b border-border p-4 bg-background">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 w-1/3">
-          <div className="relative w-full">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search emails and tasks..."
-              className="w-full pl-9"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        {!isMobile && (
+          <div className="flex items-center gap-4 w-1/3">
+            <div className="relative w-full">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search emails and tasks..."
+                className="w-full pl-9"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
+        )}
+
+        {isMobile && (
+          <div className="flex-1 text-center">
+            <h1 className="text-lg font-bold">MailTask</h1>
+          </div>
+        )}
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
+          {isMobile && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => {
+                navigate("/search");
+              }}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon"

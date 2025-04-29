@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 import { BarChart2, Calendar, CheckCircle, Inbox, Mail, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   const navItems = [
     { name: "Dashboard", path: "/", icon: BarChart2 },
@@ -29,7 +31,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-sidebar border-r border-border flex flex-col h-screen">
+    <aside className={`bg-sidebar border-r border-border flex flex-col ${isMobile ? 'h-full' : 'h-screen'} ${isMobile ? 'w-full' : 'w-64'}`}>
       <div className="p-4 border-b border-border">
         <h1 className="text-xl font-bold flex items-center">
           <Mail className="mr-2 h-6 w-6 text-primary" />
@@ -61,9 +63,9 @@ export const Sidebar = () => {
           <Avatar className="h-8 w-8 mr-3">
             <AvatarFallback>{getInitials(user?.user_metadata?.full_name || user?.email)}</AvatarFallback>
           </Avatar>
-          <div>
-            <p className="text-sm font-medium">{user?.user_metadata?.full_name || "User"}</p>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
+          <div className="overflow-hidden">
+            <p className="text-sm font-medium truncate">{user?.user_metadata?.full_name || "User"}</p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
         </div>
       </div>
